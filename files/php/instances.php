@@ -17,7 +17,10 @@ $instance['acteris'] = array_merge($instance['acteris'], array(
         'W-OVERFLOW',
         'options.txt',
         'optionsof.txt',
-        'servers.dat'
+        'journeymap',
+        '.cache',
+        'crash-reports',
+        'schematics'
     ),
     "whitelist" => array(
         'EvilerCrib27313'
