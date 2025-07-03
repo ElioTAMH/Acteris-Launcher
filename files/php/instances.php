@@ -1,7 +1,7 @@
 <?php
 $instance['acteris'] = array_merge($instance['acteris'], array(
     "loadder" => array(
-        "minecraft_version" => "1.8.9",
+        "minecraft_version" => "1.20.1",
         "loadder_type" => "forge",
         "loadder_version" => "latest"
     ),
@@ -24,9 +24,9 @@ $instance['acteris'] = array_merge($instance['acteris'], array(
     ),
     "whitelistActive" => true,
     "status" => array(
-        "nameServer" => "Hypixel",
-        "ip" => "mc.hypixel.net",
-        "port" => 25565
+        "nameServer" => "Acteris",
+        "ip" => "91.197.6.237",
+        "port" => 25723
     )
 ));
 ?>
