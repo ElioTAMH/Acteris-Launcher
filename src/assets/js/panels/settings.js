@@ -5,6 +5,7 @@
 
 import { changePanel, accountSelect, database, Slider, config, setStatus, popup, appdata, setBackground } from '../utils.js'
 const { ipcRenderer } = require('electron');
+const fs = require('fs');
 const os = require('os');
 
 class Settings {
@@ -161,19 +162,103 @@ class Settings {
         });
     }
 
-    async javaPath() {
-        let javaPathText = document.querySelector(".java-path-txt")
-        javaPathText.textContent = `${await appdata()}/${process.platform == 'darwin' ? this.config.dataDirectory : `.${this.config.dataDirectory}`}/runtime`;
+    // async javaPath() {
+    //     let javaPathText = document.querySelector(".java-path-txt")
+    //     javaPathText.textContent = `${await appdata()}/${process.platform == 'darwin' ? this.config.dataDirectory : `.${this.config.dataDirectory}`}/runtime`;
 
-        let configClient = await this.db.readData('configClient')
-        let javaPath = configClient?.java_config?.java_path || 'Utiliser la version de java livre avec le launcher';
+    //     let configClient = await this.db.readData('configClient')
+    //     const embeddedJavaPath = `${await appdata()}/${process.platform == 'darwin'
+    //         ? this.config.dataDirectory
+    //         : `.${this.config.dataDirectory}`}/runtime/jre-17.0.15-windows-x64/bin/java.exe`;
+    //     // let javaPath = configClient?.java_config?.java_path || 'Utiliser la version de java livre avec le launcher';
+    //     // let javaPath = configClient?.java_config?.java_path;
+    //     let javaPath = null;
+    //     console.log(configClient)
+    //     console.log(config)
+    //     console.log(embeddedJavaPath)
+    //     if (!javaPath) {
+    //         console.log("Aucun chemin Java custom défini, utilisation de la version embarquée.");
+    //         console.log(embeddedJavaPath)
+    //         // Si pas de chemin custom → utilise Java embarqué
+    //         javaPath = embeddedJavaPath;
+    //     }
+    //     console.log(javaPath)
+
+    //     // Si toujours rien trouvé → message d’erreur
+    //     const systemJava = "java"; // doit être dans PATH
+    //     if (!fs.existsSync(javaPath)) {
+    //         console.warn("Java embarqué introuvable, utilisation de Java système...");
+    //         javaPath = systemJava;
+    //     }
+
+
+    //     console.log("Java Path:" + javaPath); // Debug line to check the javaPath value
+    //     let javaPathInputTxt = document.querySelector(".java-path-input-text");
+    //     let javaPathInputFile = document.querySelector(".java-path-input-file");
+    //     javaPathInputTxt.value = javaPath;
+
+    //     document.querySelector(".java-path-set").addEventListener("click", async () => {
+    //         javaPathInputFile.value = '';
+    //         javaPathInputFile.click();
+    //         await new Promise((resolve) => {
+    //             let interval;
+    //             interval = setInterval(() => {
+    //                 if (javaPathInputFile.value != '') resolve(clearInterval(interval));
+    //             }, 100);
+    //         });
+
+    //         if (javaPathInputFile.value.replace(".exe", '').endsWith("java") || javaPathInputFile.value.replace(".exe", '').endsWith("javaw")) {
+    //             let configClient = await this.db.readData('configClient')
+    //             let file = javaPathInputFile.files[0].path;
+    //             javaPathInputTxt.value = file;
+    //             configClient.java_config.java_path = file
+    //             await this.db.updateData('configClient', configClient);
+    //         } else alert("Le nom du fichier doit être java ou javaw");
+    //     });
+
+    //     document.querySelector(".java-path-reset").addEventListener("click", async () => {
+    //         let configClient = await this.db.readData('configClient')
+    //         javaPathInputTxt.value = 'Utiliser la version de java livre avec le launcher';
+    //         configClient.java_config.java_path = null
+    //         await this.db.updateData('configClient', configClient);
+    //     });
+    // }
+
+    async javaPath() {
+        const javaPathText = document.querySelector(".java-path-txt");
+        javaPathText.textContent = `${await appdata()}/.${this.config.dataDirectory}/runtime`;
+
+        let configClient = await this.db.readData('configClient');
+        const embeddedJavaPath = `${await appdata()}/.${this.config.dataDirectory}/runtime/jre-17.0.15-windows-x64/bin/java.exe`;
+
+        // On prend le chemin custom si défini, sinon Java embarqué
+        let javaPath = configClient?.java_config?.java_path || embeddedJavaPath;
+
+        // Si Java embarqué n'existe pas → fallback Java système
+        if (!fs.existsSync(javaPath)) {
+            console.warn("Java introuvable à ce chemin : " + javaPath);
+            javaPath = "java"; // doit être dans le PATH
+        }
+
+        console.log("Java Path utilisé : " + javaPath);
+
         let javaPathInputTxt = document.querySelector(".java-path-input-text");
         let javaPathInputFile = document.querySelector(".java-path-input-file");
         javaPathInputTxt.value = javaPath;
 
+        if (!javaPath || javaPath === "java") {
+            configClient = await this.db.readData('configClient');
+            javaPathInputTxt.value = 'Utiliser la version de java livre avec le launcher';
+            configClient.java_config.java_path = null;
+            await this.db.updateData('configClient', configClient);
+            javaPath = embeddedJavaPath;
+            console.log("Java Path réinitialisé : " + javaPath);
+        }
+
         document.querySelector(".java-path-set").addEventListener("click", async () => {
             javaPathInputFile.value = '';
             javaPathInputFile.click();
+
             await new Promise((resolve) => {
                 let interval;
                 interval = setInterval(() => {
@@ -181,22 +266,31 @@ class Settings {
                 }, 100);
             });
 
-            if (javaPathInputFile.value.replace(".exe", '').endsWith("java") || javaPathInputFile.value.replace(".exe", '').endsWith("javaw")) {
-                let configClient = await this.db.readData('configClient')
-                let file = javaPathInputFile.files[0].path;
-                javaPathInputTxt.value = file;
-                configClient.java_config.java_path = file
+            const selectedFile = javaPathInputFile.files[0]?.path;
+            if (!selectedFile) return;
+
+            if (selectedFile.replace(".exe", '').endsWith("java") || selectedFile.replace(".exe", '').endsWith("javaw")) {
+                configClient = await this.db.readData('configClient');
+                javaPathInputTxt.value = selectedFile;
+                configClient.java_config.java_path = selectedFile;
                 await this.db.updateData('configClient', configClient);
-            } else alert("Le nom du fichier doit être java ou javaw");
+                javaPath = selectedFile;
+                console.log("Java Path mis à jour : " + javaPath);
+            } else {
+                alert("Le nom du fichier doit être java ou javaw");
+            }
         });
 
         document.querySelector(".java-path-reset").addEventListener("click", async () => {
-            let configClient = await this.db.readData('configClient')
+            configClient = await this.db.readData('configClient');
             javaPathInputTxt.value = 'Utiliser la version de java livre avec le launcher';
-            configClient.java_config.java_path = null
+            configClient.java_config.java_path = null;
             await this.db.updateData('configClient', configClient);
+            javaPath = embeddedJavaPath;
+            console.log("Java Path réinitialisé : " + javaPath);
         });
     }
+
 
     async resolution() {
         let configClient = await this.db.readData('configClient')

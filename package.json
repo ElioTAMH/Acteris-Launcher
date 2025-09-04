@@ -1,7 +1,7 @@
 {
     "name": "Acteris-Launcher",
     "preductname": "Acteris Launcher",
-    "version": "5.1.4",
+    "version": "5.1.7",
     "description": "Launcher Minecraft pour le serveur Acteris",
     "main": "src/app.js",
     "author": {
@@ -24,6 +24,7 @@
     "dependencies": {
         "electron-log": "^5.4.1",
         "electron-updater": "^6.1.8",
+        "fs": "^0.0.1-security",
         "minecraft-java-core": "^4.1.4",
         "node-bdd": "^2.0.4",
         "node-fetch": "^2.7.0",
